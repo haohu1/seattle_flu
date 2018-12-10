@@ -1,4 +1,5 @@
 import datetime
+import numpy as np
 import numpy.random as ran
 import pandas as pd
 
@@ -21,24 +22,27 @@ residential_address_B = residential_address[residential_address['CT_CODE'] > 215
 
 def get_gender_age(full_address):
     GEOID = full_address['GEOID']
-    age_gender_dist = KC_age_gender.loc[[GEOID]].loc[:,'M0-5':'F85-120']
-    age_gender_freq_dist = FreqDist(age_gender_dist)
-    age_gender_prob_dist_age_gender = MLEProbDist(age_gender_freq_dist)
-    age_gender_random = age_gender_prob_dist_age_gender.generate()
-    gender = age_gender_random[0]
-    age = age_gender_random[1:]
-    return gender, age
+    try:
+        age_gender_dist = KC_age_gender.loc[[GEOID]].loc[:,'M0-4':'F85-120']
+        age_gender_freq_dist = FreqDist(age_gender_dist)
+        age_gender_prob_dist_age_gender = MLEProbDist(age_gender_freq_dist)
+        age_gender_random = age_gender_prob_dist_age_gender.generate()
+        gender = age_gender_random[0]
+        age = age_gender_random[1:]
+        return gender, age
+    except:
+        return np.nan, np.nan
 
 #test_address = residential_address_A.sample().to_dict('records')[0]
 #gender, age = get_gender_age(test_address)
 #print gender, age
 #exit(1)
 
-sampling_rate = 0.1
-
 popA = 500000.0
 popB = 500000.0
-init_infection = 2
+init_infection = 10
+
+sampling_rate = 0.1
 
 SA = popA - init_infection
 IA = init_infection
@@ -55,7 +59,7 @@ R0 = 1.5
 mu = 1.0/3.0
 beta = R0 * mu
 
-timesteps = 20 #each time step is one day
+timesteps = 300 #each time step is one day
 
 current_date = datetime.date(2018, 9, 1)
 
