@@ -34,15 +34,18 @@ def get_gender_age(full_address):
     except:
         return np.nan, np.nan
 
-def add_individual(infection_individuals, res_address, diagnosis):
-    diagnosis_freq_dist = FreqDist(diagnosis)
-    diagnosis_prob_dist = MLEProbDist(diagnosis_freq_dist)
-    diagnosis_random = diagnosis_prob_dist.generate()
-    new_address = res_address.sample().to_dict('records')[0]
-    full_address = new_address['ADDR_FULL'] + '|' + new_address['CTYNAME'] + '|' + new_address['ZIP5']
-    gender, age = get_gender_age(new_address)
-    infection_individuals = infection_individuals.append({'Date_Inf': current_date, 'Gender': gender, 'Age': age, 'Census_Tract': new_address['GEOID'], 'Address':full_address, 'LON':new_address['LON'], 'LAT':new_address['LAT'], 'Diagnosis': diagnosis_random}, ignore_index=True)
-    return infection_individuals
+def add_individual(number_individuals, res_address, diagnosis):
+    total_individuals = []
+    new_address = res_address.sample(number_individuals).to_dict('records')
+    for idx in xrange(number_individuals):
+        diagnosis_freq_dist = FreqDist(diagnosis)
+        diagnosis_prob_dist = MLEProbDist(diagnosis_freq_dist)
+        diagnosis_random = diagnosis_prob_dist.generate()
+        full_address = new_address[idx]['ADDR_FULL'] + '|' + new_address[idx]['CTYNAME'] + '|' + new_address[idx]['ZIP5']
+        gender, age = get_gender_age(new_address[idx])
+        new_individual = {'Date_Inf': current_date, 'Gender': gender, 'Age': age, 'Census_Tract': new_address[idx]['GEOID'], 'Address':full_address, 'LON':new_address[idx]['LON'], 'LAT':new_address[idx]['LAT'], 'Diagnosis': diagnosis_random}
+        total_individuals.append(new_individual)
+    return pd.DataFrame.from_records(total_individuals)
 
 #test_address = residential_address_A.sample().to_dict('records')[0]
 #gender, age = get_gender_age(test_address)
@@ -56,9 +59,9 @@ init_infection = 10
 
 sampling_rate = 0.1
 
-nonflu_rate = 0.01
+nonflu_rate = 0.1
 
-nonflu_diagnosis = {"Parainfluenza": 0.1, "Rhinovirus": 0.25, "Coronavirus":0.25, "Adenovirus":0.25, "Negative": 0.15}
+nonflu_diagnosis = {"Parainfluenza": 0.1, "Rhinovirus": 0.2, "Coronavirus":0.25, "Adenovirus":0.25, "Negative": 0.2}
 
 SA = popA - init_infection
 IA = init_infection
@@ -69,7 +72,7 @@ SB = popB
 IB = 0
 RB = 0
 
-popRSV = 50000
+popRSV = 50000.0
 start_time_RSV = 15
 SRSV = popRSV
 IRSV = 0
@@ -85,11 +88,9 @@ mu = 1.0/3.0
 beta = R0 * mu
 betaRSV = R0RSV * mu
 
-timesteps = 365 #each time step is one day
+timesteps = 300 #each time step is one day
 
 current_date = datetime.date(2018, 9, 1)
-
-infection_individuals = pd.DataFrame(columns=['Date_Inf','Gender','Age','Census_Tract', 'Address', 'LON', 'LAT', "Diagnosis"])
 
 #compartmental SIR
 
@@ -135,19 +136,25 @@ for t in xrange(timesteps):
     number_individuals_newinfA = ran.binomial(newinfA, sampling_rate)
     number_individuals_newinfB = ran.binomial(newinfB, sampling_rate)
     number_individuals_newinfRSV = ran.binomial(newinfRSV, sampling_rate)
-
     print t, number_individuals_nonflu, number_individuals_newinfA, number_individuals_newinfB, number_individuals_newinfRSV
 
     #write fake individual records
-    for idx in xrange(number_individuals_nonflu):
-        infection_individuals = add_individual(infection_individuals, residential_address, nonflu_diagnosis)
-    for idx in xrange(number_individuals_newinfA):
-        infection_individuals = add_individual(infection_individuals, residential_address_A, {"Influenza": 1})
-    for idx in xrange(number_individuals_newinfB):
-        infection_individuals = add_individual(infection_individuals, residential_address_B, {"Influenza": 1})
-    for idx in xrange(number_individuals_newinfRSV):
-        infection_individuals = add_individual(infection_individuals, residential_address_RSV, {"RSV": 1})
+    infection_individuals = pd.DataFrame(columns=['Date_Inf','Gender','Age','Census_Tract', 'Address', 'LON', 'LAT', "Diagnosis"])
+
+    nonflu_individuals = add_individual(number_individuals_nonflu, residential_address, nonflu_diagnosis)
+    infection_individuals = pd.concat([infection_individuals, nonflu_individuals], ignore_index=True, sort=False)
+
+    newinfA_individuals = add_individual(number_individuals_newinfA, residential_address_A, {"Influenza": 1})
+    infection_individuals = pd.concat([infection_individuals, newinfA_individuals], ignore_index=True, sort=False)
+
+    newinfB_individuals = add_individual(number_individuals_newinfB, residential_address_B, {"Influenza": 1})
+    infection_individuals = pd.concat([infection_individuals, newinfB_individuals], ignore_index=True, sort=False)
+
+    newinfRSV_individuals = add_individual(number_individuals_newinfRSV, residential_address_RSV, {"Influenza": 1})
+    infection_individuals = pd.concat([infection_individuals, newinfRSV_individuals], ignore_index=True, sort=False)
+
+    infection_individuals.to_pickle("output/infection_individuals_"+str(t)+".pickle")
+
     current_date = current_date + datetime.timedelta(days=1)
 
-infection_individuals.to_pickle("output/infection_individuals.pickle")
-infection_individuals.to_csv("output/infection_individuals.csv")
+#infection_individuals.to_csv("output/infection_individuals.csv")
