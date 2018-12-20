@@ -38,7 +38,7 @@ def add_individual(infection_individuals, res_address, diagnosis):
     diagnosis_freq_dist = FreqDist(diagnosis)
     diagnosis_prob_dist = MLEProbDist(diagnosis_freq_dist)
     diagnosis_random = diagnosis_prob_dist.generate()
-    new_address = residential_address_A.sample().to_dict('records')[0]
+    new_address = res_address.sample().to_dict('records')[0]
     full_address = new_address['ADDR_FULL'] + '|' + new_address['CTYNAME'] + '|' + new_address['ZIP5']
     gender, age = get_gender_age(new_address)
     infection_individuals = infection_individuals.append({'Date_Inf': current_date, 'Gender': gender, 'Age': age, 'Census_Tract': new_address['GEOID'], 'Address':full_address, 'LON':new_address['LON'], 'LAT':new_address['LAT'], 'Diagnosis': diagnosis_random}, ignore_index=True)
@@ -56,7 +56,7 @@ init_infection = 10
 
 sampling_rate = 0.1
 
-nonflu_rate = 0.001
+nonflu_rate = 0.01
 
 nonflu_diagnosis = {"Parainfluenza": 0.1, "Rhinovirus": 0.25, "Coronavirus":0.25, "Adenovirus":0.25, "Negative": 0.15}
 
@@ -135,6 +135,8 @@ for t in xrange(timesteps):
     number_individuals_newinfA = ran.binomial(newinfA, sampling_rate)
     number_individuals_newinfB = ran.binomial(newinfB, sampling_rate)
     number_individuals_newinfRSV = ran.binomial(newinfRSV, sampling_rate)
+
+    print t, number_individuals_nonflu, number_individuals_newinfA, number_individuals_newinfB, number_individuals_newinfRSV
 
     #write fake individual records
     for idx in xrange(number_individuals_nonflu):
