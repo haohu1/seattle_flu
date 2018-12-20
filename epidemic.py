@@ -52,14 +52,14 @@ def add_individual(number_individuals, res_address, diagnosis):
 #print gender, age
 #exit(1)
 
-popA = 500000.0
-popB = 500000.0
+popA = 700000.0
+popB = 1000000.0
 totalpop = popA + popB
 init_infection = 10
 
 sampling_rate = 0.1
 
-nonflu_rate = 0.1
+nonflu_rate = 0.05
 
 nonflu_diagnosis = {"Parainfluenza": 0.1, "Rhinovirus": 0.2, "Coronavirus":0.25, "Adenovirus":0.25, "Negative": 0.2}
 
