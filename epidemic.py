@@ -150,7 +150,7 @@ for t in xrange(timesteps):
     newinfB_individuals = add_individual(number_individuals_newinfB, residential_address_B, {"Influenza": 1})
     infection_individuals = pd.concat([infection_individuals, newinfB_individuals], ignore_index=True, sort=False)
 
-    newinfRSV_individuals = add_individual(number_individuals_newinfRSV, residential_address_RSV, {"Influenza": 1})
+    newinfRSV_individuals = add_individual(number_individuals_newinfRSV, residential_address_RSV, {"RSV": 1})
     infection_individuals = pd.concat([infection_individuals, newinfRSV_individuals], ignore_index=True, sort=False)
 
     infection_individuals.to_pickle("output/infection_individuals_"+str(t)+".pickle")
